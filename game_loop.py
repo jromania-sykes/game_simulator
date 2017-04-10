@@ -26,9 +26,10 @@ class location:
         self.y = y
 
     def get_desc(self):
-        return 'room %s %s x %s  y %s' % (self.room.get_room_name(), self.room.get_room_desc(), self.x, self.y)
+        return 'room %s %s' % (self.room.get_room_name(), self.room.get_room_desc())
 
-
+    def get_coods(self):
+        return '%s %s' % (self.x, self.y)
 class weapon:
     weapon_dict = {
         'club': {'speed': 3, 'damage': 5},
@@ -43,7 +44,10 @@ inhabitant_dict = {
     'gnome': {'name': 'gnar', 'strength': 7, 'defense': 7, 'description': 'toothy gnar gnar',
               'location': location(room('start'), 2, 3)},
     'player': {'name': 'snoop dog', 'strength': 7, 'defense': 7, 'description': 'supa sly',
-               'location': location(room('start'), 2, 1)}
+               'location': location(room('start'), 2, 1)},
+    'killerhobbit': {'name': 'hobbit', 'strength': 8, 'defense': 8, 'description': 'blood thirsty hobbit that can cook well',
+               'location': location(room('start'), 3, 3)},
+
 }
 
 
@@ -79,32 +83,54 @@ class inhab:
         if command == 'forward':
             # find location, move one step forward, save
             l = self.inhab['location']
-            print 'you are in room %s position %s %s' % l
+            print 'you are in room %s position %s %s' % (l.room,l.x, l.y)
             print 'move'
-            self.inhab['location'] = (l[0], l[1], l[2] + 1)
+            self.inhab['location'] = location(l.room, l.x, l.y + 1)
         if command == 'help':
             print self.get_available_moves()
 
 
 class game_world:
 
+    # def get_proximity_desc(location):
+    #     room_desc = location.get_room_desc()
+    #
+    #     for i in inhabitant_dict:
+    #         print str(i)
+    #     return room_desc
+
+    def is_within_striking_range(self, loc1, loc2):
+        if abs(loc1.x == loc2.x) :
+            if abs(loc1.y - loc2.y) < 2:
+                return True
+        if abs(loc1.y == loc2.y):
+            if abs(loc1.x - loc2.x) < 2:
+                return True
+        return False
+
     def get_proximity_desc(self, location):
         # search inhab table see if any thing close to location
+        in_room_list = []
         for i in inhabitant_dict:
-            print inhabitant_dict[i]['location']
-
+            if i != 'player' and inhabitant_dict[i]['location'].room.get_room_name() == location.room.get_room_name():
+                loc_desc = inhabitant_dict[i]['description'] + ('[CAN STRIKE YOU!]' if self.is_within_striking_range(inhabitant_dict[i]['location'],location) else '')
+                in_room_list.append(loc_desc)
+        return ','.join(in_room_list)
 
     def get_player_context(self, player):
-        location_string = 'you are %s, %s - in %s' % (
-        player.get_name(), player.get_desc(), player.get_location().get_desc())
+        loc = player.get_location()
 
-        proximity_desc = get_proximity_desc(player.get_location())
-        return desc_string
+        location_string = 'you are %s, %s - in %s' % (player.get_name(), player.get_desc(), loc.get_desc())
+
+        proximity_desc = self.get_proximity_desc(loc)
+        return location_string + ', ' + proximity_desc + " is the room with you!"
 
     def __init__(self, id, name):
         self.id = id
         self.name = name
         print 'creating world %s' % self.name
+
+
 
     def initialize(self):
         print 'initializing world'
